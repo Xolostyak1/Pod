@@ -2,7 +2,7 @@ name: Instagram to Telegram Forwarder
 
 on:
   schedule:
-    - cron: "*/35 * * * *"     # или */10, */15 — по вашим лимитам
+    - cron: "*/2 * * * *"     # или */10, */15 — по вашим лимитам
   workflow_dispatch:
 
 jobs:
