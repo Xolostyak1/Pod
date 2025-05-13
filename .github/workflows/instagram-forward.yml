@@ -2,18 +2,21 @@ name: Instagram to Telegram Forwarder
 
 on:
   schedule:
-    - cron: "*/35 * * * *"  # запуск каждые 5 минут
-  # Можно добавить вручную запуск для тестирования
+    - cron: "*/35 * * * *"     # или */10, */15 — по вашим лимитам
   workflow_dispatch:
 
 jobs:
   insta_bot:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # даем право на push в репозиторий (для сохранения state)
+      contents: write         # нужно для git push
+
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          persist-credentials: true
 
       - name: Setup Python
         uses: actions/setup-python@v3
@@ -21,25 +24,26 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install instaloader==4.14.1 requests
+        run: pip install instaloader requests
 
       - name: Run Instagram bot script
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          IG_USERNAME: ${{ secrets.IG_USERNAME }}
-          IG_PASSWORD: ${{ secrets.IG_PASSWORD }}
-          ACCOUNTS: "alinazhkva, filatovakshu, melody_perfume"  # список аккаунтов через запятую
+          IG_USERNAME:        ${{ secrets.IG_USERNAME }}
+          IG_PASSWORD:        ${{ secrets.IG_PASSWORD }}
+          ACCOUNTS:           "alinazhkva, filatovakshu, melody_perfume"
         run: python insta_telegram_bot.py
 
       - name: Commit updated state
-        if: success()  # выполнять, только если предыдущий шаг успешен
+        if: success()
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+          git pull origin main --rebase
           git add state.json || true
-          git add *.session || true
-          if git diff --staged --quiet; then
+          git add *.session  || true
+          if git diff --cached --quiet; then
             echo "No changes to commit."
           else
             git commit -m "Update bot state [skip ci]"
